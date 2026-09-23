@@ -676,14 +676,17 @@ async function handleRegister() {
   els.registerBtn.textContent = '✍️ สมัครสมาชิก';
 
   if (res.ok) {
-    currentUser = res.user;
-    beep(200, 1046, 2);
-    goToPayment();
-    startSessionWatch();
-  } else {
-    beep(300, 340, 1);
-    alert('❌ ' + (res.msg || 'สมัครไม่สำเร็จ'));
+    const me = await api('/api/me');
+  if (!me.ok) {
+    alert('สมัครสำเร็จ แต่ session หลุด กรุณา login ใหม่');
+    showView('login');
+    return;
   }
+  currentUser = me.user;
+  beep(200, 1046, 2);
+  goToPayment();
+  startSessionWatch();
+}
 }
 
 /* ============================================================
@@ -705,6 +708,11 @@ function routeByUserStatus() {
 }
 
 function goToPayment() {
+  if (!currentUser) {           // ← ✅ เพิ่ม guard
+    console.warn('⚠️ currentUser undefined, กลับหน้า login');
+    showView('login');
+    return;
+  }
   showView('payment');
   els.payWhoName.textContent = currentUser.username;
   loadQR();
