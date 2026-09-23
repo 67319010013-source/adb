@@ -107,15 +107,18 @@ async function initDB() {
 // MIDDLEWARE & GUARDS
 // ============================================================
 app.set('trust proxy', 1);
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-app.use(cors({ origin: true, credentials: true }));
 
 app.use(session({
   name: 'fd.sid',
   secret: process.env.SESSION_SECRET || 'change-this-secret',
-  resave: false, saveUninitialized: false,
-  cookie: { httpOnly: true, secure: false, maxAge: 30 * 24 * 60 * 60 * 1000 }
+  resave: false,
+  saveUninitialized: false,
+  cookie: {
+    httpOnly: true,
+    secure: false,          // ← คงไว้ false เพราะ Render proxy
+    sameSite: 'lax',        // ← ✅ เพิ่มบรรทัดนี้
+    maxAge: 30 * 24 * 60 * 60 * 1000
+  }
 }));
 
 function requireLogin(req, res, next) {
@@ -152,7 +155,15 @@ app.post('/api/login', async (req, res) => {
   if (!user || !bcrypt.compareSync(password, user.password_hash)) return res.json({ ok: false, msg: 'ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง' });
   
   req.session.user = { username: user.username, role: user.role };
-  req.session.save(() => res.json({ ok: true }));
+  req.session.save(() => res.json({
+     ok: true,
+     user: {                                    
+      username: user.username,
+      role: user.role,
+      status: user.status,
+      expiresAt: user.expires_at
+    } 
+    }));
 });
 
 app.post('/api/register', async (req, res) => {
