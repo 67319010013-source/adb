@@ -1,0 +1,1524 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<title>FREQ DETECTOR</title>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0a100e;--panel:#121c18;--panel-raised:#16221d;--line:#24332c;
+    --text:#e4f2ec;--muted:#7f978f;--dim:#526059;
+    --phosphor:#4dffae;--phosphor-dim:#1f6b4d;
+    --amber:#ff9a4a;--alt:#ff6b4a;--alt-dim:#7a2e1f;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  body{
+    margin:0;padding:16px;
+    min-height:100vh;min-height:100dvh;
+    background:#0a100e;color:#e5e7eb;font-family:'Sarabun',sans-serif;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    background-image:radial-gradient(circle at 15% 0%,rgba(77,255,174,0.05),transparent 45%),
+      repeating-linear-gradient(0deg,rgba(255,255,255,0.012) 0px,rgba(255,255,255,0.012) 1px,transparent 1px,transparent 3px);
+    padding-top:calc(16px + env(safe-area-inset-top));
+    padding-bottom:calc(16px + env(safe-area-inset-bottom));
+  }
+  .view{display:none;width:100%;max-width:480px;}
+  .view.active{display:block;}
+
+  .card{
+    background:var(--panel);border-radius:24px;padding:24px 20px 28px;
+    border:1px solid var(--line);
+    box-shadow:0 20px 40px rgba(0,0,0,0.6),inset 0 1px 2px rgba(255,255,255,0.05);
+  }
+  .card h1{
+    font-size:1.5rem;font-weight:700;margin:0 0 4px;text-align:center;
+    color:var(--phosphor);letter-spacing:0.5px;
+  }
+  .subtitle{
+    text-align:center;color:var(--muted);font-size:0.85rem;
+    margin-bottom:20px;border-bottom:1px solid var(--line);padding-bottom:16px;
+  }
+  .info-box{
+    background:rgba(77,255,174,0.06);border:1px solid var(--phosphor-dim);
+    border-radius:10px;padding:12px 14px;font-size:0.8rem;
+    line-height:1.6;color:var(--text);margin-bottom:18px;
+  }
+  .info-box b{color:var(--phosphor);}
+  .info-box.amber{background:rgba(255,154,74,0.08);border-color:var(--amber);}
+  .info-box.amber b{color:var(--amber);}
+
+  .tabs{display:flex;background:var(--panel-raised);border-radius:12px;padding:4px;margin-bottom:20px;border:1px solid var(--line);}
+  .tab{flex:1;padding:10px;text-align:center;font-size:0.85rem;font-weight:600;color:var(--muted);cursor:pointer;border-radius:8px;transition:0.15s;}
+  .tab.active{background:linear-gradient(180deg,rgba(77,255,174,0.18),rgba(77,255,174,0.06));color:var(--phosphor);border:1px solid var(--phosphor-dim);}
+
+  .input-group{margin-bottom:16px;}
+  .input-group label{display:block;font-size:0.85rem;color:var(--text);margin-bottom:6px;font-weight:500;}
+  .input-group input{
+    width:100%;background:var(--panel-raised);border:1px solid var(--line);
+    border-radius:10px;padding:12px 14px;color:var(--text);
+    font-family:'JetBrains Mono',monospace;font-size:0.9rem;
+    transition:border-color .15s,box-shadow .15s;outline:none;
+  }
+  .input-group input:focus{border-color:var(--phosphor-dim);box-shadow:0 0 0 2px rgba(77,255,174,0.15);}
+  .input-group input::placeholder{color:var(--dim);font-family:'Sarabun',sans-serif;font-size:0.85rem;}
+
+  .btn{
+    width:100%;margin-top:6px;padding:14px;min-height:50px;
+    border-radius:10px;border:1px solid var(--phosphor-dim);
+    background:linear-gradient(180deg,rgba(77,255,174,0.14),rgba(77,255,174,0.04));
+    color:var(--phosphor);font-family:'Sarabun',sans-serif;
+    font-weight:600;font-size:1rem;cursor:pointer;letter-spacing:0.3px;
+    transition:border-color .15s,transform .1s;
+  }
+  .btn:hover{border-color:var(--phosphor);}
+  .btn:active{transform:scale(0.98);}
+  .btn:disabled{opacity:0.5;cursor:not-allowed;}
+  .btn.ghost{background:var(--panel-raised);color:var(--text);border-color:var(--line);}
+  .btn.amber{background:linear-gradient(180deg,rgba(255,154,74,0.18),rgba(255,154,74,0.05));color:var(--amber);border-color:var(--amber);}
+
+  .hint{font-size:0.72rem;color:var(--dim);margin-top:10px;line-height:1.6;text-align:center;}
+  .conn-status{font-family:'JetBrains Mono',monospace;font-size:0.7rem;color:var(--dim);margin-top:8px;text-align:center;}
+  .conn-status.ok{color:var(--phosphor);}
+  .conn-status.err{color:var(--alt);}
+
+  /* Payment */
+  .amount-display{text-align:center;margin:12px 0 20px;}
+  .amount-display .num{
+    font-size:3rem;font-weight:800;color:var(--phosphor);
+    text-shadow:0 0 20px rgba(77,255,174,0.5);
+    font-family:'JetBrains Mono',monospace;
+  }
+  .amount-display .unit{font-size:1rem;color:var(--muted);margin-left:6px;}
+  .qr-box{
+    background:#ffffff;border-radius:16px;padding:16px;
+    margin-bottom:16px;display:flex;justify-content:center;align-items:center;
+    min-height:280px;
+    box-shadow:0 0 0 4px rgba(77,255,174,0.15),0 8px 30px rgba(0,0,0,0.5);
+  }
+  .qr-box img{
+    width:100%;max-width:280px;height:auto;display:block;
+    image-rendering:pixelated;
+  }
+  .qr-box .qr-placeholder{
+    color:#999;font-size:0.85rem;text-align:center;padding:20px;
+    font-family:'Sarabun',sans-serif;
+  }
+  .qr-box .qr-placeholder b{color:#e11d48;display:block;margin-bottom:6px;font-size:1rem;}
+
+  .status-badge{
+    display:block;text-align:center;padding:10px 16px;border-radius:20px;
+    font-size:0.9rem;font-weight:600;margin-bottom:16px;
+    transition:0.3s;
+  }
+  .status-pending{background:rgba(255,154,74,0.15);color:var(--amber);border:1px solid var(--amber);}
+  .status-paid{background:rgba(77,255,174,0.15);color:var(--phosphor);border:1px solid var(--phosphor-dim);}
+  .status-expired{background:rgba(255,107,74,0.15);color:var(--alt);border:1px solid var(--alt);}
+
+  .polling-indicator{
+    display:flex;align-items:center;justify-content:center;gap:8px;
+    font-size:0.8rem;color:var(--muted);margin-top:12px;
+  }
+  .spinner{
+    width:14px;height:14px;border:2px solid var(--phosphor-dim);
+    border-top-color:var(--phosphor);border-radius:50%;
+    animation:spin 0.8s linear infinite;
+  }
+  @keyframes spin{to{transform:rotate(360deg);}}
+
+  /* User bar */
+  .user-bar{
+    display:flex;align-items:center;justify-content:space-between;gap:8px;
+    background:#111827;border:1px solid var(--line);border-radius:40px;
+    padding:8px 14px;margin-bottom:14px;font-size:0.78rem;
+  }
+  .user-bar .who{font-family:'JetBrains Mono',monospace;color:#9ca3af;display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
+  .user-bar .who .role-admin{color:var(--amber);}
+  .user-bar .who .role-user{color:var(--phosphor);}
+  .user-bar .actions{display:flex;gap:6px;}
+  .mini-btn{
+    background:transparent;border:1px solid #374151;color:#9ca3af;
+    font-family:'Sarabun',sans-serif;font-size:0.72rem;
+    padding:6px 12px;border-radius:30px;cursor:pointer;transition:0.15s;
+  }
+  .mini-btn:hover{border-color:var(--phosphor-dim);color:var(--phosphor);}
+  .mini-btn.danger:hover{border-color:var(--alt);color:var(--alt);}
+
+  /* Countdown */
+  .countdown-bar{
+    background:linear-gradient(90deg,rgba(77,255,174,0.12),rgba(77,255,174,0.03));
+    border:1px solid var(--phosphor-dim);border-radius:12px;
+    padding:10px 14px;margin-bottom:14px;
+    display:flex;justify-content:space-between;align-items:center;
+  }
+  .countdown-bar .lbl{font-size:0.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:1px;}
+  .countdown-bar .time{
+    font-family:'JetBrains Mono',monospace;font-weight:700;font-size:1.1rem;
+    color:var(--phosphor);font-variant-numeric:tabular-nums;
+  }
+  .countdown-bar.warn{background:linear-gradient(90deg,rgba(255,154,74,0.15),rgba(255,154,74,0.03));border-color:var(--amber);}
+  .countdown-bar.warn .time{color:var(--amber);}
+  .countdown-bar.danger{background:linear-gradient(90deg,rgba(255,107,74,0.18),rgba(255,107,74,0.05));border-color:var(--alt);}
+  .countdown-bar.danger .time{color:var(--alt);animation:pulse 1s infinite;}
+  @keyframes pulse{0%,100%{opacity:1;}50%{opacity:0.5;}}
+
+  /* Program */
+  .prog-title{
+    font-size:1.5rem;font-weight:700;letter-spacing:1px;margin:0 0 4px;
+    text-align:center;color:#f9fafb;display:flex;align-items:center;
+    justify-content:center;gap:8px;flex-wrap:wrap;
+  }
+  .prog-title small{font-size:0.75rem;font-weight:400;background:#374151;padding:4px 10px;border-radius:30px;color:#9ca3af;}
+  .freq-display{
+    background:#0b0f19;border-radius:24px;padding:18px 12px;text-align:center;
+    margin-bottom:20px;box-shadow:inset 0 4px 10px rgba(0,0,0,0.7);
+  }
+  .freq-value{
+    font-size:3rem;font-weight:800;font-variant-numeric:tabular-nums;
+    color:#34d399;text-shadow:0 0 20px #34d39980;line-height:1.2;
+    font-family:'JetBrains Mono',monospace;
+  }
+  .freq-unit{font-size:1rem;color:#6b7280;font-weight:400;margin-left:6px;}
+  .freq-target{font-size:0.9rem;color:#9ca3af;margin-top:6px;min-height:1.4em;}
+  .mode-badge{
+    display:flex;justify-content:space-between;align-items:center;
+    background:#111827;border-radius:40px;padding:8px 16px;
+    margin-bottom:18px;border:1px solid #374151;
+  }
+  .mode-label{
+    font-weight:600;font-size:1rem;letter-spacing:0.5px;
+    padding:6px 18px;border-radius:40px;
+    background:#1e3a8a;color:#bfdbfe;transition:0.2s;
+  }
+  .mode-label.mode-b{background:#5b21b6;color:#ddd6fe;}
+  .vibrate-indicator{display:flex;align-items:center;gap:6px;font-size:0.8rem;color:#9ca3af;}
+  .dot{width:12px;height:12px;border-radius:50%;background:#4b5563;transition:0.1s;}
+  .dot.active{background:#f59e0b;box-shadow:0 0 12px #f59e0b;}
+  .btn-group{display:flex;gap:12px;margin:16px 0 10px;}
+
+  .btn-prog{
+    flex:1;border:none;padding:14px 8px;border-radius:60px;
+    font-weight:600;font-size:1rem;background:#374151;color:#e5e7eb;
+    transition:all 0.15s;touch-action:manipulation;cursor:pointer;
+    border:1px solid #4b5563;
+    display:flex;align-items:center;justify-content:center;gap:6px;
+    font-family:'Sarabun',sans-serif;
+  }
+  .btn-prog:active{transform:scale(0.96);background:#4b5563;}
+  .btn-prog.primary{background:#2563eb;border-color:#3b82f6;color:white;}
+  .btn-prog.primary:active{background:#1d4ed8;}
+  .btn-prog.warning{background:#b91c1c;border-color:#ef4444;color:white;}
+  .btn-prog:disabled{opacity:0.4;pointer-events:none;}
+
+  .log-area{
+    background:#0b0f19;border-radius:18px;padding:12px 14px;margin-top:18px;
+    font-family:'JetBrains Mono',monospace;font-size:0.7rem;color:#9ca3af;
+    height:140px;overflow-y:auto;border:1px solid #2d3748;line-height:1.5;
+    white-space:pre-wrap;word-break:break-all;
+  }
+
+  /* Admin */
+  .admin-card h2{font-size:1.1rem;font-weight:700;margin:0 0 4px;color:var(--phosphor);display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+  .count-badge{display:inline-block;background:var(--panel-raised);border:1px solid var(--phosphor-dim);color:var(--phosphor);padding:2px 10px;border-radius:999px;font-family:'JetBrains Mono',monospace;font-size:0.72rem;}
+  .table-wrap{overflow-x:auto;margin:12px 0 18px;}
+  table{border-collapse:collapse;width:100%;min-width:600px;font-family:'JetBrains Mono',monospace;font-size:0.7rem;}
+  th,td{padding:9px 8px;text-align:left;border-bottom:1px solid var(--line);white-space:nowrap;}
+  th{color:var(--muted);font-weight:500;font-size:0.65rem;text-transform:uppercase;letter-spacing:0.8px;}
+  tr.admin-row td{color:var(--amber);}
+  .badge-paid{color:var(--phosphor);background:rgba(77,255,174,0.1);padding:2px 8px;border-radius:30px;}
+  .badge-unpaid{color:var(--amber);background:rgba(255,154,74,0.1);padding:2px 8px;border-radius:30px;}
+  .badge-expired{color:var(--alt);background:rgba(255,107,74,0.1);padding:2px 8px;border-radius:30px;}
+  .badge-pending{color:#a78bfa;background:rgba(167,139,250,0.1);padding:2px 8px;border-radius:30px;}
+  .btn-del{background:linear-gradient(180deg,rgba(255,107,74,0.14),rgba(255,107,74,0.04));border:1px solid var(--alt-dim);color:var(--alt);padding:5px 10px;border-radius:30px;font-family:'Sarabun',sans-serif;font-size:0.7rem;cursor:pointer;}
+  .btn-del:hover{border-color:var(--alt);}
+  .btn-approve{background:linear-gradient(180deg,rgba(77,255,174,0.14),rgba(77,255,174,0.04));border:1px solid var(--phosphor-dim);color:var(--phosphor);padding:5px 10px;border-radius:30px;font-family:'Sarabun',sans-serif;font-size:0.7rem;cursor:pointer;margin-right:4px;}
+  .btn-approve:hover{border-color:var(--phosphor);}
+  .btn-refresh{background:transparent;border:1px solid var(--line);color:var(--muted);padding:6px 12px;border-radius:30px;font-family:'Sarabun',sans-serif;font-size:0.75rem;cursor:pointer;}
+  .btn-refresh:hover{border-color:var(--phosphor-dim);color:var(--phosphor);}
+
+  /* Overlay */
+  .overlay{
+    display:none;position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:9999;
+    align-items:center;justify-content:center;padding:20px;
+  }
+  .overlay.show{display:flex;}
+  .overlay-box{
+    background:var(--panel);border:1px solid var(--alt);border-radius:16px;
+    padding:24px 20px;max-width:400px;text-align:center;
+  }
+  .overlay-box.warn{border-color:var(--amber);}
+  .overlay-box.success{border-color:var(--phosphor);}
+  .overlay-box h3{color:var(--alt);margin:0 0 10px;font-size:1.1rem;}
+  .overlay-box.warn h3{color:var(--amber);}
+  .overlay-box.success h3{color:var(--phosphor);}
+  .overlay-box p{color:var(--text);font-size:0.85rem;line-height:1.6;margin:0 0 16px;}
+
+  .hidden{display:none !important;}
+</style>
+</head>
+<body>
+
+<!-- Overlay: บัญชีถูกลบ -->
+<div class="overlay" id="kickOverlay">
+  <div class="overlay-box">
+    <h3>⚠️ บัญชีของคุณถูกลบ</h3>
+    <p>แอดมินได้ลบบัญชีนี้แล้ว<br>คุณจะไม่สามารถใช้งานได้</p>
+    <button class="btn" id="kickOkBtn">ตกลง</button>
+  </div>
+</div>
+
+<!-- Overlay: หมดอายุ -->
+<div class="overlay" id="expiredOverlay">
+  <div class="overlay-box warn">
+    <h3>⏰ หมดเวลาการใช้งาน</h3>
+    <p>ระยะเวลาใช้งาน 24 ชั่วโมงของคุณหมดแล้ว<br>กรุณาชำระเงินอีกครั้งเพื่อใช้งานต่อ</p>
+    <button class="btn amber" id="renewBtn">💳 ต่ออายุการใช้งาน</button>
+  </div>
+</div>
+
+<!-- Overlay: ชำระเงินสำเร็จ -->
+<div class="overlay" id="paidOverlay">
+  <div class="overlay-box success">
+    <h3>✅ ชำระเงินสำเร็จ!</h3>
+    <p>ระบบตรวจพบการชำระเงินของคุณแล้ว<br>กำลังเข้าสู่หน้าใช้งาน…</p>
+  </div>
+</div>
+
+<!-- ===== VIEW 1: LOGIN / REGISTER ===== -->
+<div class="view active" id="view-login">
+  <div class="card">
+    <h1>🎤 FREQ DETECTOR</h1>
+
+    <div class="tabs">
+      <div class="tab active" id="tabLogin">🔓 เข้าสู่ระบบ</div>
+      <div class="tab" id="tabRegister">✍️ สมัครสมาชิก</div>
+    </div>
+
+    <div id="formLogin">
+      <div class="input-group">
+        <label>ชื่อผู้ใช้</label>
+        <input type="text" id="loginUser" placeholder="ชื่อผู้ใช้" autocomplete="username" spellcheck="false">
+      </div>
+      <div class="input-group">
+        <label>รหัสผ่าน</label>
+        <input type="password" id="loginPass" placeholder="••••••••" autocomplete="current-password">
+      </div>
+      <button class="btn" id="loginBtn">🔓 เข้าสู่ระบบ</button>
+    </div>
+
+    <div id="formRegister" class="hidden">
+      <div class="info-box">
+        ℹ️ สมัครฟรี! หลังสมัครจะต้อง <b>ชำระเงิน 500 บาท</b><br>
+        ผ่านการสแกน QR เพื่อเริ่มใช้งาน <b>24 ชั่วโมง</b>
+      </div>
+      <div class="input-group">
+        <label>ชื่อผู้ใช้</label>
+        <input type="text" id="regUser" placeholder="a-z A-Z 0-9 _ เท่านั้น" spellcheck="false">
+      </div>
+      <div class="input-group">
+        <label>รหัสผ่าน</label>
+        <input type="password" id="regPass" placeholder="อย่างน้อย 4 ตัว" autocomplete="new-password">
+      </div>
+      <div class="input-group">
+        <label>ยืนยันรหัสผ่าน</label>
+        <input type="password" id="regPass2" placeholder="พิมพ์รหัสผ่านอีกครั้ง" autocomplete="new-password">
+      </div>
+      <button class="btn" id="registerBtn">✍️ สมัครสมาชิก</button>
+    </div>
+
+    <div class="conn-status" id="connStatus">⏳ กำลังตรวจสอบการเชื่อมต่อ…</div>
+  </div>
+</div>
+
+<!-- ===== VIEW 2: PAYMENT ===== -->
+<div class="view" id="view-payment">
+  <div class="card">
+    <div class="user-bar">
+      <div class="who">👤 <span id="payWhoName">—</span></div>
+      <div class="actions">
+        <button class="mini-btn danger" id="payLogoutBtn">↩ ออก</button>
+      </div>
+    </div>
+    <h1>💳 ชำระเงิน</h1>
+
+    <div class="amount-display">
+      <span class="num">฿500</span><span class="unit">บาท</span>
+    </div>
+
+    <div class="status-badge status-pending" id="payStatusBadge">⏳ รอการชำระเงิน</div>
+
+    <div class="qr-box" id="qrBox">
+      <img id="qrImg" src="/qr-payment.png" alt="QR Code พร้อมเพย์"
+           onerror="this.style.display='none';this.nextElementSibling.style.display='block';">
+      <div class="qr-placeholder" style="display:none;">
+        <b>⚠️ ยังไม่มีไฟล์ QR</b>
+        กรุณาวางไฟล์ <code>qr-payment.png</code><br>ไว้ในโฟลเดอร์ <code>public/</code>
+      </div>
+    </div>
+
+    <div class="info-box amber">
+      📌 สแกน QR ด้านบนเพื่อโอนเงิน <b>500 บาท</b><br>
+      ระบบจะ <b>ตรวจจับการชำระเงินอัตโนมัติ</b> ภายในไม่กี่วินาที<br>
+      เมื่อสำเร็จจะเข้าสู่หน้า "จับเสียง" ทันที
+    </div>
+
+    <div class="polling-indicator" id="pollingIndicator">
+      <div class="spinner"></div>
+      <span id="pollingText">กำลังรอการยืนยันจากระบบ…</span>
+    </div>
+
+    <div id="paymentRefBox" style="text-align:center;margin-top:12px;">
+      <span style="font-size:0.7rem;color:var(--dim);font-family:'JetBrains Mono',monospace;">
+        Ref: <span id="paymentRefText">—</span>
+      </span>
+    </div>
+
+    <div class="info-box" style="margin-top:16px;">
+      📤 โอนเงินแล้ว? แนบรูป <b>สลิปโอนเงิน</b> เพื่อให้ระบบตรวจสอบอัตโนมัติทันที
+    </div>
+    <div style="text-align:center;margin-top:10px;">
+      <input type="file" id="slipFileInput" accept="image/*" capture="environment" style="display:none;">
+      <button class="btn ghost" id="slipPickBtn" type="button">🖼 เลือกรูปสลิป</button>
+      <span id="slipFileName" style="display:block;font-size:0.75rem;color:var(--dim);margin-top:6px;"></span>
+      <button class="btn" id="slipUploadBtn" type="button" style="margin-top:10px;display:none;">✅ ยืนยันการชำระเงิน</button>
+      <div id="slipUploadMsg" style="font-size:0.8rem;margin-top:8px;"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== VIEW 3: PROGRAM ===== -->
+<div class="view" id="view-program">
+  <div class="card">
+    <div class="user-bar">
+      <div class="who">
+        👤 <span id="progWhoName">—</span>
+        <span id="progWhoRole" class="role-user">(user)</span>
+      </div>
+      <div class="actions">
+        <button class="mini-btn" id="goAdminBtn" style="display:none;">🛠 แอดมิน</button>
+        <button class="mini-btn danger" id="progLogoutBtn">↩ ออก</button>
+      </div>
+    </div>
+
+    <div class="countdown-bar" id="countdownBar">
+      <span class="lbl">⏱️ เวลาคงเหลือ</span>
+      <span class="time" id="countdownTime">--:--:--</span>
+    </div>
+
+    <h1 class="prog-title">🎤 FREQ DETECTOR <small>มือถือ</small></h1>
+
+    <div class="freq-display">
+      <span class="freq-value" id="freqValue">0.0</span><span class="freq-unit">Hz</span>
+      <div class="freq-target" id="freqTarget">—</div>
+    </div>
+
+    <div class="mode-badge">
+      <span class="mode-label" id="modeLabel">MODE A</span>
+      <div class="vibrate-indicator">
+        <span style="font-size:1.2rem;">📳</span>
+        <span class="dot" id="vibrateDot"></span>
+        <span id="vibrateText">ไม่สั่น</span>
+      </div>
+    </div>
+
+    <div class="btn-group">
+      <button class="btn-prog primary" id="startBtn">▶ เริ่มฟัง</button>
+      <button class="btn-prog warning" id="stopBtn" disabled>⏹ หยุด</button>
+    </div>
+    <div class="btn-group">
+      <button class="btn-prog" id="toggleModeBtn">🔄 สลับโหมด (A/B)</button>
+    </div>
+
+    <div id="adminOnlyPanel" class="hidden">
+      <div class="log-area" id="logArea">🟢 พร้อมใช้งาน · กด "เริ่มฟัง" เพื่อเปิดไมค์</div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== VIEW 4: ADMIN ===== -->
+<div class="view" id="view-admin">
+  <div class="card admin-card">
+    <h2>🛠 แผงควบคุมแอดมิน <span class="count-badge" id="userCountBadge">0 คน</span></h2>
+    <div class="subtitle">ดูรายชื่อผู้ใช้ · สถานะการจ่าย · เวลาคงเหลือ · อนุมัติ/ลบบัญชี</div>
+
+    <div style="display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap;">
+      <button class="btn-refresh" id="refreshUsersBtn">🔄 รีเฟรชผู้ใช้</button>
+      <button class="btn-refresh" id="refreshIntentsBtn">💳 รีเฟรชรายการจ่าย</button>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>#</th><th>ชื่อผู้ใช้</th><th>บทบาท</th><th>สถานะ</th>
+            <th>เวลาคงเหลือ</th><th>สร้างโดย</th><th>จัดการ</th>
+          </tr>
+        </thead>
+        <tbody id="userTableBody"></tbody>
+      </table>
+    </div>
+
+    <h3 style="font-size:0.95rem;color:var(--phosphor);margin:20px 0 8px;">
+      💳 รายการชำระเงิน (pending ล่าสุด)
+    </h3>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Ref</th><th>ผู้ใช้</th><th>ยอด</th><th>สถานะ</th><th>เวลา</th><th>จัดการ</th>
+          </tr>
+        </thead>
+        <tbody id="intentTableBody"></tbody>
+      </table>
+    </div>
+
+    <button class="btn ghost" id="adminBackBtn">↩ กลับหน้าโปรแกรม</button>
+  </div>
+</div>
+
+<script>
+/* ============================================================
+   CONFIG
+============================================================ */
+const API_BASE = '';
+const POLL_INTERVAL_MS = 3000;  // poll ทุก 3 วิ
+
+/* ============================================================
+   API HELPER
+============================================================ */
+async function api(path, options = {}) {
+  const opts = {
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json' },
+    ...options
+  };
+  try {
+    const r = await fetch(API_BASE + path, opts);
+    return await r.json().catch(() => ({ ok: false, msg: 'ตอบกลับไม่ใช่ JSON' }));
+  } catch (e) {
+    return { ok: false, msg: 'เชื่อมต่อเซิร์ฟเวอร์ไม่ได้: ' + e.message };
+  }
+}
+
+/* ============================================================
+   ELEMENTS
+============================================================ */
+const $ = id => document.getElementById(id);
+const els = {
+  viewLogin: $('view-login'), viewPayment: $('view-payment'),
+  viewProgram: $('view-program'), viewAdmin: $('view-admin'),
+  tabLogin: $('tabLogin'), tabRegister: $('tabRegister'),
+  formLogin: $('formLogin'), formRegister: $('formRegister'),
+  loginUser: $('loginUser'), loginPass: $('loginPass'), loginBtn: $('loginBtn'),
+  regUser: $('regUser'), regPass: $('regPass'), regPass2: $('regPass2'), registerBtn: $('registerBtn'),
+  connStatus: $('connStatus'),
+  payWhoName: $('payWhoName'), payLogoutBtn: $('payLogoutBtn'),
+  qrImg: $('qrImg'), qrBox: $('qrBox'),
+  payStatusBadge: $('payStatusBadge'),
+  pollingIndicator: $('pollingIndicator'),
+  pollingText: $('pollingText'),
+  paymentRefText: $('paymentRefText'),
+  slipFileInput: $('slipFileInput'), slipPickBtn: $('slipPickBtn'),
+  slipFileName: $('slipFileName'), slipUploadBtn: $('slipUploadBtn'),
+  slipUploadMsg: $('slipUploadMsg'),
+  progWhoName: $('progWhoName'), progWhoRole: $('progWhoRole'),
+  goAdminBtn: $('goAdminBtn'), progLogoutBtn: $('progLogoutBtn'),
+  countdownBar: $('countdownBar'), countdownTime: $('countdownTime'),
+  adminOnlyPanel: $('adminOnlyPanel'),
+  userCountBadge: $('userCountBadge'), userTableBody: $('userTableBody'),
+  intentTableBody: $('intentTableBody'),
+  refreshUsersBtn: $('refreshUsersBtn'), refreshIntentsBtn: $('refreshIntentsBtn'),
+  adminBackBtn: $('adminBackBtn'),
+  kickOverlay: $('kickOverlay'), kickOkBtn: $('kickOkBtn'),
+  expiredOverlay: $('expiredOverlay'), renewBtn: $('renewBtn'),
+  paidOverlay: $('paidOverlay')
+};
+
+let currentUser = null;
+let sessionTimer = null;
+let countdownTimer = null;
+let isKicked = false;
+
+let adminTickTimer = null;
+let adminUsersCache = [];
+let adminLastFetch = 0;
+
+// Payment polling
+let paymentRef = null;
+let paymentPollTimer = null;
+
+/* ============================================================
+   VIEW
+============================================================ */
+function showView(name) {
+  [els.viewLogin, els.viewPayment, els.viewProgram, els.viewAdmin]
+    .forEach(v => v.classList.remove('active'));
+  if (name === 'login') els.viewLogin.classList.add('active');
+  if (name === 'payment') els.viewPayment.classList.add('active');
+  if (name === 'program') els.viewProgram.classList.add('active');
+  if (name === 'admin') els.viewAdmin.classList.add('active');
+
+  if (name !== 'program') {
+    try { stopListening(); } catch (e) {}
+    releaseWakeLock();
+  }
+  if (name !== 'program' && name !== 'admin') {
+    stopCountdown();
+  }
+  if (name !== 'admin') {
+    stopAdminTick();
+  }
+  if (name !== 'payment') {
+    stopPaymentPolling();
+  }
+}
+
+/* ============================================================
+   Beep
+============================================================ */
+let actxShared = null;
+function ensureSharedCtx() {
+  if (!actxShared) {
+    const AC = window.AudioContext || window.webkitAudioContext;
+    actxShared = new AC();
+  }
+  return actxShared;
+}
+function beep(ms, freq, times) {
+  try {
+    const ctx = ensureSharedCtx();
+    if (ctx.state === 'suspended') ctx.resume().catch(() => {});
+    let t = ctx.currentTime + 0.02;
+    for (let i = 0; i < (times || 1); i++) {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.frequency.value = freq || 700;
+      osc.type = 'square';
+      gain.gain.setValueAtTime(0.0001, t);
+      gain.gain.exponentialRampToValueAtTime(0.1, t + 0.01);
+      gain.gain.exponentialRampToValueAtTime(0.0001, t + ms / 1000);
+      osc.connect(gain).connect(ctx.destination);
+      osc.start(t);
+      osc.stop(t + ms / 1000 + 0.02);
+      t += ms / 1000 * 2;
+    }
+  } catch (e) {}
+}
+
+/* ============================================================
+   TABS
+============================================================ */
+els.tabLogin.addEventListener('click', () => {
+  els.tabLogin.classList.add('active');
+  els.tabRegister.classList.remove('active');
+  els.formLogin.classList.remove('hidden');
+  els.formRegister.classList.add('hidden');
+});
+els.tabRegister.addEventListener('click', () => {
+  els.tabRegister.classList.add('active');
+  els.tabLogin.classList.remove('active');
+  els.formRegister.classList.remove('hidden');
+  els.formLogin.classList.add('hidden');
+});
+
+/* ============================================================
+   LOGIN / REGISTER
+============================================================ */
+async function handleLogin() {
+  const username = els.loginUser.value.trim();
+  const password = els.loginPass.value;
+  if (!username || !password) { beep(200, 340, 1); return; }
+
+  els.loginBtn.disabled = true;
+  els.loginBtn.textContent = 'กำลังตรวจสอบ…';
+  beep(120, 740, 2);
+
+  const res = await api('/api/login', {
+    method: 'POST',
+    body: JSON.stringify({ username, password })
+  });
+
+  els.loginBtn.disabled = false;
+  els.loginBtn.textContent = '🔓 เข้าสู่ระบบ';
+
+  if (res.ok) {
+    currentUser = res.user;
+    beep(200, 1046, 2);
+    routeByUserStatus();
+    startSessionWatch();
+  } else {
+    beep(300, 340, 1);
+    els.loginPass.value = '';
+    els.loginPass.focus();
+    alert('❌ ' + (res.msg || 'ล็อกอินไม่สำเร็จ'));
+  }
+}
+
+async function handleRegister() {
+  const u = els.regUser.value.trim();
+  const p = els.regPass.value;
+  const p2 = els.regPass2.value;
+
+  if (!u) { els.regUser.focus(); beep(200, 340, 1); return; }
+  if (p.length < 4) { alert('รหัสผ่านต้องยาวอย่างน้อย 4 ตัว'); els.regPass.focus(); beep(200, 340, 1); return; }
+  if (p !== p2) { alert('รหัสผ่านไม่ตรงกัน'); els.regPass2.value = ''; els.regPass2.focus(); beep(200, 340, 1); return; }
+
+  els.registerBtn.disabled = true;
+  els.registerBtn.textContent = 'กำลังสมัคร…';
+  beep(120, 740, 2);
+
+  const res = await api('/api/register', {
+    method: 'POST',
+    body: JSON.stringify({ username: u, password: p })
+  });
+
+  els.registerBtn.disabled = false;
+  els.registerBtn.textContent = '✍️ สมัครสมาชิก';
+
+  if (res.ok) {
+    currentUser = res.user;
+    beep(200, 1046, 2);
+    goToPayment();
+    startSessionWatch();
+  } else {
+    beep(300, 340, 1);
+    alert('❌ ' + (res.msg || 'สมัครไม่สำเร็จ'));
+  }
+}
+
+/* ============================================================
+   ROUTING
+============================================================ */
+function routeByUserStatus() {
+  if (!currentUser) return showView('login');
+  if (currentUser.role === 'admin') { goToProgram(); return; }
+
+  const now = Date.now();
+  if (currentUser.status === 'paid' && currentUser.expiresAt && currentUser.expiresAt > now) {
+    goToProgram();
+  } else if (currentUser.status === 'expired') {
+    goToPayment();
+    setTimeout(() => els.expiredOverlay.classList.add('show'), 300);
+  } else {
+    goToPayment();
+  }
+}
+
+function goToPayment() {
+  showView('payment');
+  els.payWhoName.textContent = currentUser.username;
+  loadQR();
+  startPaymentSession();   // ⭐ เริ่ม polling
+}
+
+function goToProgram() {
+  showView('program');
+  els.progWhoName.textContent = currentUser.username;
+  els.progWhoRole.textContent = '(' + currentUser.role + ')';
+  els.progWhoRole.className = currentUser.role === 'admin' ? 'role-admin' : 'role-user';
+  els.goAdminBtn.style.display = currentUser.role === 'admin' ? 'inline-block' : 'none';
+
+  if (currentUser.role === 'admin') {
+    els.adminOnlyPanel.classList.remove('hidden');
+  } else {
+    els.adminOnlyPanel.classList.add('hidden');
+  }
+
+  if (currentUser.role !== 'admin') {
+    startCountdown();
+    requestWakeLock();
+  }
+}
+
+/* ============================================================
+   LOGOUT
+============================================================ */
+async function handleLogout() {
+  try { stopListening(); } catch (e) {}
+  stopSessionWatch();
+  stopCountdown();
+  stopAdminTick();
+  stopPaymentPolling();
+  releaseWakeLock();
+  await api('/api/logout', { method: 'POST' });
+  currentUser = null;
+  paymentRef = null;
+  els.loginUser.value = '';
+  els.loginPass.value = '';
+  showView('login');
+  beep(120, 520, 1);
+}
+
+/* ============================================================
+   SESSION WATCH
+============================================================ */
+function startSessionWatch() {
+  stopSessionWatch();
+  sessionTimer = setInterval(async () => {
+    if (!currentUser || isKicked) return;
+    const res = await api('/api/me');
+    if (!res.ok) {
+      isKicked = true;
+      stopSessionWatch();
+      try { stopListening(); } catch (e) {}
+      releaseWakeLock();
+      stopPaymentPolling();
+      if (navigator.vibrate) navigator.vibrate([300, 100, 300]);
+      els.kickOverlay.classList.add('show');
+      return;
+    }
+    currentUser = res.user;
+
+    if (currentUser.role !== 'admin' && currentUser.status !== 'paid') {
+      if (currentUser.status === 'expired' && els.viewProgram.classList.contains('active')) {
+        stopListening();
+        releaseWakeLock();
+        stopCountdown();
+        goToPayment();
+        els.expiredOverlay.classList.add('show');
+      }
+    }
+  }, 5000);
+}
+function stopSessionWatch() {
+  if (sessionTimer) { clearInterval(sessionTimer); sessionTimer = null; }
+}
+
+els.kickOkBtn.addEventListener('click', () => {
+  els.kickOverlay.classList.remove('show');
+  isKicked = false;
+  currentUser = null;
+  els.loginUser.value = '';
+  els.loginPass.value = '';
+  showView('login');
+});
+
+els.renewBtn.addEventListener('click', () => {
+  els.expiredOverlay.classList.remove('show');
+  loadQR();
+  startPaymentSession();
+});
+
+/* ============================================================
+   PAYMENT — QR + POLLING
+============================================================ */
+function loadQR() {
+  // cache bust
+  els.qrImg.src = '/qr-payment.png?t=' + Date.now();
+}
+
+async function startPaymentSession() {
+  // สร้าง intent
+  const r = await api('/api/create-payment', { method: 'POST' });
+  if (!r.ok) {
+    els.payStatusBadge.textContent = '❌ สร้างรายการไม่สำเร็จ';
+    els.payStatusBadge.className = 'status-badge status-expired';
+    return;
+  }
+  paymentRef = r.ref;
+  els.paymentRefText.textContent = paymentRef;
+  console.log('💳 Payment ref:', paymentRef);
+
+  els.payStatusBadge.textContent = '⏳ รอการชำระเงิน…';
+  els.payStatusBadge.className = 'status-badge status-pending';
+  els.pollingIndicator.style.display = 'flex';
+  els.pollingText.textContent = 'กำลังรอการยืนยันจากระบบ…';
+
+  // รีเซ็ตส่วนอัปโหลดสลิป
+  selectedSlipFile = null;
+  if (els.slipFileInput) els.slipFileInput.value = '';
+  if (els.slipFileName) els.slipFileName.textContent = '';
+  if (els.slipUploadBtn) { els.slipUploadBtn.style.display = 'none'; els.slipUploadBtn.disabled = false; }
+  if (els.slipUploadMsg) els.slipUploadMsg.textContent = '';
+
+  // เริ่ม polling
+  stopPaymentPolling();
+  paymentPollTimer = setInterval(checkPayment, POLL_INTERVAL_MS);
+  checkPayment(); // เรียกทันที
+}
+
+/* ---- อัปโหลดสลิปให้ระบบตรวจอัตโนมัติ (Tesseract OCR) ---- */
+let selectedSlipFile = null;
+
+els.slipPickBtn?.addEventListener('click', () => els.slipFileInput.click());
+
+els.slipFileInput?.addEventListener('change', () => {
+  const f = els.slipFileInput.files[0];
+  selectedSlipFile = f || null;
+  els.slipFileName.textContent = f ? f.name : '';
+  els.slipUploadBtn.style.display = f ? 'inline-block' : 'none';
+  els.slipUploadMsg.textContent = '';
+});
+
+els.slipUploadBtn?.addEventListener('click', async () => {
+  if (!selectedSlipFile || !paymentRef) return;
+  els.slipUploadBtn.disabled = true;
+  els.slipUploadMsg.style.color = 'var(--dim)';
+  els.slipUploadMsg.textContent = '⏳ กำลังให้ AI อ่านสลิป... (อาจใช้เวลา 5-10 วินาที)';
+
+  try {
+    const fd = new FormData();
+    fd.append('slip', selectedSlipFile);
+    fd.append('ref', paymentRef);
+
+    const r = await fetch(API_BASE + '/api/verify-slip', {
+      method: 'POST',
+      credentials: 'include',
+      body: fd // ห้ามตั้ง Content-Type เอง ให้ browser ใส่ multipart boundary ให้
+    });
+    const data = await r.json().catch(() => ({ ok: false, msg: 'ตอบกลับไม่ใช่ JSON' }));
+
+    if (data.ok) {
+      els.slipUploadMsg.style.color = 'var(--phosphor)';
+      els.slipUploadMsg.textContent = '✅ ' + (data.msg || 'ตรวจสอบสำเร็จ');
+      checkPayment(); // เช็คทันทีเพื่ออัปเดตสถานะ/เข้าโปรแกรม
+    } else {
+      els.slipUploadMsg.style.color = '#ff6b6b';
+      els.slipUploadMsg.textContent = '❌ ' + (data.msg || 'ตรวจสอบสลิปไม่สำเร็จ');
+      els.slipUploadBtn.disabled = false;
+    }
+  } catch (e) {
+    els.slipUploadMsg.style.color = '#ff6b6b';
+    els.slipUploadMsg.textContent = '❌ เชื่อมต่อเซิร์ฟเวอร์ไม่ได้';
+    els.slipUploadBtn.disabled = false;
+  }
+});
+
+async function checkPayment() {
+  if (!paymentRef || !currentUser) return;
+
+  const r = await api('/api/check-payment?ref=' + encodeURIComponent(paymentRef));
+  if (!r.ok) return;
+
+  if (r.paid) {
+    // ✅ ชำระเงินสำเร็จ!
+    stopPaymentPolling();
+    els.payStatusBadge.textContent = '✅ ชำระเงินแล้ว';
+    els.payStatusBadge.className = 'status-badge status-paid';
+    els.pollingText.textContent = '✅ ตรวจพบการชำระเงิน!';
+    els.pollingIndicator.querySelector('.spinner').style.display = 'none';
+
+    if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
+    beep(150, 1046, 2);
+
+    // โหลด user ใหม่
+    const me = await api('/api/me');
+    if (me.ok) currentUser = me.user;
+
+    // แสดง overlay แล้วเข้าหน้าจับเสียง
+    els.paidOverlay.classList.add('show');
+    setTimeout(() => {
+      els.paidOverlay.classList.remove('show');
+      goToProgram();
+    }, 1500);
+  } else if (r.status === 'expired') {
+    // intent หมดอายุ → สร้างใหม่
+    els.pollingText.textContent = '⏳ รายการหมดอายุ กำลังสร้างใหม่…';
+    startPaymentSession();
+  }
+}
+
+function stopPaymentPolling() {
+  if (paymentPollTimer) { clearInterval(paymentPollTimer); paymentPollTimer = null; }
+}
+
+els.payLogoutBtn.addEventListener('click', handleLogout);
+
+/* ============================================================
+   COUNTDOWN
+============================================================ */
+function fmtCountdown(ms) {
+  if (ms <= 0) return '00:00:00';
+  const s = Math.floor(ms / 1000);
+  const h = String(Math.floor(s / 3600)).padStart(2, '0');
+  const m = String(Math.floor((s % 3600) / 60)).padStart(2, '0');
+  const ss = String(s % 60).padStart(2, '0');
+  return `${h}:${m}:${ss}`;
+}
+
+function startCountdown() {
+  stopCountdown();
+  updateCountdown();
+  countdownTimer = setInterval(updateCountdown, 1000);
+}
+function stopCountdown() {
+  if (countdownTimer) { clearInterval(countdownTimer); countdownTimer = null; }
+}
+function updateCountdown() {
+  if (!currentUser || currentUser.role === 'admin') return;
+  if (!currentUser.expiresAt) return;
+  const remain = currentUser.expiresAt - Date.now();
+  els.countdownTime.textContent = fmtCountdown(Math.max(0, remain));
+
+  els.countdownBar.classList.remove('warn', 'danger');
+  if (remain < 5 * 60 * 1000) els.countdownBar.classList.add('danger');
+  else if (remain < 60 * 60 * 1000) els.countdownBar.classList.add('warn');
+
+  if (remain <= 0) {
+    stopCountdown();
+    stopListening();
+    releaseWakeLock();
+    currentUser.status = 'expired';
+    goToPayment();
+    els.expiredOverlay.classList.add('show');
+  }
+}
+
+/* ============================================================
+   WAKE LOCK
+============================================================ */
+let wakeLock = null;
+async function requestWakeLock() {
+  try {
+    if ('wakeLock' in navigator) {
+      wakeLock = await navigator.wakeLock.request('screen');
+      wakeLock.addEventListener('release', () => { wakeLock = null; });
+    }
+  } catch (e) {}
+}
+function releaseWakeLock() {
+  try { if (wakeLock) { wakeLock.release(); wakeLock = null; } } catch (e) {}
+}
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible'
+      && currentUser
+      && currentUser.role !== 'admin'
+      && els.viewProgram.classList.contains('active')) {
+    requestWakeLock();
+  }
+});
+
+/* ============================================================
+   ADMIN
+============================================================ */
+async function fetchUsers() {
+  const res = await api('/api/users');
+  if (!res.ok) return false;
+  adminUsersCache = res.users.map(u => {
+    const expiresAt = (u.status === 'paid' && u.remainingMs > 0)
+      ? Date.now() + u.remainingMs
+      : (u.expires_at || null);
+    return { ...u, _expiresAt: expiresAt };
+  });
+  adminLastFetch = Date.now();
+  return true;
+}
+
+async function fetchIntents() {
+  const res = await api('/api/admin/payment-intents');
+  if (!res.ok) return [];
+
+  els.intentTableBody.innerHTML = '';
+  if (res.intents.length === 0) {
+    els.intentTableBody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--dim);">— ไม่มีรายการ —</td></tr>';
+    return [];
+  }
+
+  res.intents.slice(0, 20).forEach(it => {
+    const tr = document.createElement('tr');
+    let badge = '<span class="badge-pending">⏳ รอ</span>';
+    if (it.status === 'paid') badge = '<span class="badge-paid">✅ จ่าย</span>';
+    else if (it.status === 'expired') badge = '<span class="badge-expired">⏰ หมดอายุ</span>';
+
+    const time = it.created_at ? new Date(it.created_at).toLocaleTimeString('th-TH') : '—';
+    const action = (it.status === 'pending')
+      ? `<button class="btn-approve" data-verify="${escapeHtml(it.ref)}">✅ อนุมัติมือ (fallback)</button>`
+      : '<span style="color:var(--dim);font-size:0.66rem;">—</span>';
+
+    tr.innerHTML = `
+      <td>${escapeHtml(it.ref)}</td>
+      <td>${escapeHtml(it.username)}</td>
+      <td>฿${it.amount}</td>
+      <td>${badge}</td>
+      <td>${time}</td>
+      <td>${action}</td>`;
+    els.intentTableBody.appendChild(tr);
+  });
+
+  // bind ปุ่มอนุมัติ
+  els.intentTableBody.querySelectorAll('[data-verify]').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const ref = btn.getAttribute('data-verify');
+      if (!confirm(`อนุมัติ ref=${ref} ?`)) return;
+      const r = await api('/api/admin/verify-payment', {
+        method: 'POST',
+        body: JSON.stringify({ ref })
+      });
+      if (r.ok) {
+        beep(120, 740, 1);
+        await fetchIntents();
+      } else {
+        alert('ไม่สำเร็จ: ' + r.msg);
+      }
+    });
+  });
+
+  return res.intents;
+}
+
+function renderUserRows() {
+  const users = adminUsersCache;
+  els.userCountBadge.textContent = users.length + ' คน';
+  els.userTableBody.innerHTML = '';
+
+  users.forEach((u, i) => {
+    const tr = document.createElement('tr');
+    if (u.role === 'admin') tr.className = 'admin-row';
+
+    let statusBadge = '<span class="badge-unpaid">ยังไม่จ่าย</span>';
+    let remainText = '—';
+
+    if (u.role === 'admin') {
+      statusBadge = '<span class="badge-paid">👑 admin</span>';
+      remainText = '∞';
+    } else if (u.status === 'paid' && u._expiresAt) {
+      const remain = u._expiresAt - Date.now();
+      if (remain > 0) {
+        statusBadge = '<span class="badge-paid">✅ จ่ายแล้ว</span>';
+        remainText = fmtCountdown(remain);
+      } else {
+        statusBadge = '<span class="badge-expired">⏰ หมดอายุ</span>';
+        remainText = '00:00:00';
+      }
+    } else if (u.status === 'expired') {
+      statusBadge = '<span class="badge-expired">⏰ หมดอายุ</span>';
+    }
+
+    const actionBtns = (u.role === 'admin')
+      ? '<span style="color:var(--dim);font-size:0.66rem;">— ลบไม่ได้ —</span>'
+      : `<button class="btn-approve" data-approve="${escapeHtml(u.username)}">✅ อนุมัติ</button>
+         <button class="btn-del" data-del="${escapeHtml(u.username)}">🗑 ลบ</button>`;
+
+    tr.innerHTML = `
+      <td>${i + 1}</td>
+      <td>${escapeHtml(u.username)}</td>
+      <td>${u.role === 'admin' ? '👑 admin' : 'user'}</td>
+      <td>${statusBadge}</td>
+      <td>${remainText}</td>
+      <td>${escapeHtml(u.created_by || '-')}</td>
+      <td>${actionBtns}</td>`;
+    els.userTableBody.appendChild(tr);
+  });
+
+  els.userTableBody.querySelectorAll('[data-del]').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const uname = btn.getAttribute('data-del');
+      if (!confirm(`ลบผู้ใช้ "${uname}" ?`)) return;
+      const r = await api('/api/users/' + encodeURIComponent(uname), { method: 'DELETE' });
+      if (r.ok) {
+        beep(120, 520, 1);
+        await fetchUsers();
+        renderUserRows();
+      } else {
+        alert('ลบไม่สำเร็จ: ' + r.msg);
+      }
+    });
+  });
+
+  els.userTableBody.querySelectorAll('[data-approve]').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const uname = btn.getAttribute('data-approve');
+      if (!confirm(`อนุมัติการจ่ายให้ "${uname}" ? (เพิ่ม 24 ชม.)`)) return;
+      const r = await api('/api/users/' + encodeURIComponent(uname) + '/approve', { method: 'POST' });
+      if (r.ok) {
+        beep(120, 740, 1);
+        await fetchUsers();
+        renderUserRows();
+      } else {
+        alert('ไม่สำเร็จ: ' + r.msg);
+      }
+    });
+  });
+}
+
+function startAdminTick() {
+  stopAdminTick();
+  adminTickTimer = setInterval(() => {
+    renderUserRows();
+    if (Date.now() - adminLastFetch > 10000) {
+      fetchUsers().then(ok => { if (ok) renderUserRows(); });
+    }
+  }, 1000);
+}
+function stopAdminTick() {
+  if (adminTickTimer) { clearInterval(adminTickTimer); adminTickTimer = null; }
+}
+
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, c =>
+    ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+
+els.refreshUsersBtn.addEventListener('click', async () => {
+  await fetchUsers();
+  renderUserRows();
+  beep(80, 740, 1);
+});
+els.refreshIntentsBtn.addEventListener('click', async () => {
+  await fetchIntents();
+  beep(80, 740, 1);
+});
+els.adminBackBtn.addEventListener('click', () => {
+  if (!currentUser) return showView('login');
+  goToProgram();
+});
+els.goAdminBtn.addEventListener('click', async () => {
+  showView('admin');
+  await fetchUsers();
+  renderUserRows();
+  await fetchIntents();
+  startAdminTick();
+  beep(120, 740, 1);
+});
+
+/* ============================================================
+   PROGRAM
+============================================================ */
+(function () {
+  const NUM_TARGETS = 20;
+  const FFT_SIZE = 2048;
+  const targetFreqA = [
+    20500, 20000, 4200, 4700, 5200,
+    5700, 6200, 6700, 7200, 7700,
+    8200, 8700, 9200, 9700, 10200,
+    10700, 11200, 11700, 12200, 12700
+  ];
+  const targetFreqB = [...targetFreqA];
+  const TOLERANCE = 500.0;
+
+  const BEEP_ON_TIME = 500;
+  const BEEP_OFF_TIME = 300;
+  const LONG_BEEP_TIME = 1000;
+  const PATTERN_GAP_TIME = 1000;
+  const NUM_PATTERNS = 6;
+  const COOLDOWN_TIME = 1500;
+  const PRE_ALERT_DELAY = 1000;
+
+  let currentMode = 'A';
+  let alertActive = false;
+  let alertPending = false;
+  let pendingTarget = -1;
+  let pendingStartTime = 0;
+
+  let vibrateQueue = [];
+  let vibrateIndex = 0;
+  let vibrateTimer = null;
+
+  let lastDetectionTime = 0;
+  let lastModeBCountTime = 0;
+  let modeB_detectionCount = 0;
+  let modeB_skipThreshold = 1;
+
+  let audioContext = null;
+  let analyser = null;
+  let microphone = null;
+  let isListening = false;
+
+  const freqValueEl = $('freqValue');
+  const freqTargetEl = $('freqTarget');
+  const modeLabelEl = $('modeLabel');
+  const vibrateDot = $('vibrateDot');
+  const vibrateText = $('vibrateText');
+  const logArea = $('logArea');
+  const startBtn = $('startBtn');
+  const stopBtn = $('stopBtn');
+  const toggleModeBtn = $('toggleModeBtn');
+
+  function log(message, type = 'info') {
+    if (!logArea || els.adminOnlyPanel.classList.contains('hidden')) return;
+    const prefix = type === 'detect' ? '🔍 ' : (type === 'alert' ? '🔔 ' : '');
+    const line = document.createElement('div');
+    line.textContent = prefix + message;
+    if (type === 'detect') line.style.color = '#34d399';
+    if (type === 'alert') line.style.color = '#f87171';
+    if (type === 'highlight') line.style.color = '#fbbf24';
+    logArea.appendChild(line);
+    logArea.scrollTop = logArea.scrollHeight;
+    while (logArea.children.length > 60) logArea.removeChild(logArea.firstChild);
+  }
+
+  function vibrate(ms) {
+    if (!navigator.vibrate) return false;
+    return navigator.vibrate(ms);
+  }
+  function updateVibrateIndicator(active) {
+    if (active) {
+      vibrateDot.classList.add('active');
+      vibrateText.textContent = 'กำลังสั่น';
+    } else {
+      vibrateDot.classList.remove('active');
+      vibrateText.textContent = 'ไม่สั่น';
+    }
+  }
+  function clearVibrateQueue() {
+    if (vibrateTimer) { clearTimeout(vibrateTimer); vibrateTimer = null; }
+    vibrateQueue = [];
+    vibrateIndex = 0;
+    alertActive = false;
+    alertPending = false;
+    updateVibrateIndicator(false);
+    if (navigator.vibrate) navigator.vibrate(0);
+  }
+  function startVibrateQueue() {
+    if (vibrateIndex >= vibrateQueue.length) {
+      clearVibrateQueue();
+      log('✅ การสั่นสิ้นสุด', 'info');
+      return;
+    }
+    const ev = vibrateQueue[vibrateIndex];
+    if (ev.state === 'vibrate') { updateVibrateIndicator(true); vibrate(ev.duration); }
+    else { updateVibrateIndicator(false); if (navigator.vibrate) navigator.vibrate(0); }
+    vibrateIndex++;
+    vibrateTimer = setTimeout(() => startVibrateQueue(), ev.duration);
+  }
+  function buildVibrateQueue(events) {
+    vibrateQueue = events.map(e => ({ state: e.state, duration: e.duration }));
+    vibrateIndex = 0;
+    alertActive = true;
+    startVibrateQueue();
+  }
+  function addPatternEvents(beepCount, isLong, events) {
+    const onTime = isLong ? LONG_BEEP_TIME : BEEP_ON_TIME;
+    const count = isLong ? 1 : beepCount;
+    for (let i = 0; i < count; i++) {
+      events.push({ state: 'vibrate', duration: onTime });
+      events.push({ state: 'pause', duration: BEEP_OFF_TIME });
+    }
+  }
+  function buildAlertSequenceDualRandom(a, b) {
+    const ev = [];
+    addPatternEvents(a + 1, a === 5, ev);
+    ev.push({ state: 'pause', duration: PATTERN_GAP_TIME });
+    addPatternEvents(b + 1, b === 5, ev);
+    return ev;
+  }
+  function buildAlertSequenceFixedBeep() {
+    const ev = [];
+    addPatternEvents(1, true, ev);
+    return ev;
+  }
+  function buildModeSwitchBeep() {
+    return [
+      { state: 'vibrate', duration: LONG_BEEP_TIME },
+      { state: 'pause', duration: BEEP_OFF_TIME }
+    ];
+  }
+  function resetModeBSkipThreshold() {
+    modeB_skipThreshold = Math.floor(Math.random() * 4) + 1;
+    modeB_detectionCount = 0;
+    log(`🔁 กำหนด threshold โหมด B = ${modeB_skipThreshold}`, 'info');
+  }
+  function toggleMode() {
+    if (alertActive || alertPending) { log('⚠️ สลับโหมดไม่ได้ขณะแจ้งเตือน', 'info'); return; }
+    currentMode = currentMode === 'A' ? 'B' : 'A';
+    if (currentMode === 'B') resetModeBSkipThreshold();
+    modeLabelEl.textContent = `MODE ${currentMode}`;
+    if (currentMode === 'B') modeLabelEl.classList.add('mode-b');
+    else modeLabelEl.classList.remove('mode-b');
+    log(`🔄 สลับเป็น MODE ${currentMode}`, 'highlight');
+    buildVibrateQueue(buildModeSwitchBeep());
+  }
+  function findTarget(frequency) {
+    const arr = currentMode === 'A' ? targetFreqA : targetFreqB;
+    for (let i = 0; i < NUM_TARGETS; i++) {
+      if (arr[i] <= 0) continue;
+      if (Math.abs(frequency - arr[i]) <= TOLERANCE) return i;
+    }
+    return -1;
+  }
+  function triggerPendingAlert(target) {
+    if (alertActive || alertPending) return;
+    const now = performance.now();
+    if (now - lastDetectionTime < COOLDOWN_TIME) return;
+    pendingTarget = target;
+    pendingStartTime = now;
+    alertPending = true;
+    const f = currentMode === 'A' ? targetFreqA[target] : targetFreqB[target];
+    log(`⏳ ตรวจพบเป้าหมาย ${target + 1} (${f} Hz) · รอ ${PRE_ALERT_DELAY} ms`, 'detect');
+    freqTargetEl.textContent = `เป้าหมาย ${target + 1} · ${f} Hz`;
+  }
+  function updatePendingAlert() {
+    if (!alertPending) return;
+    if (performance.now() - pendingStartTime >= PRE_ALERT_DELAY) {
+      alertPending = false;
+      startAlert(pendingTarget);
+    }
+  }
+  function startAlert(target) {
+    if (alertActive) return;
+    const now = performance.now();
+    if (now - lastDetectionTime < COOLDOWN_TIME) return;
+    lastDetectionTime = now;
+
+    const f = currentMode === 'A' ? targetFreqA[target] : targetFreqB[target];
+    let events;
+    if (currentMode === 'A') {
+      let a = Math.floor(Math.random() * NUM_PATTERNS);
+      let b;
+      do { b = Math.floor(Math.random() * NUM_PATTERNS); } while (b === a);
+      events = buildAlertSequenceDualRandom(a, b);
+      log(`[MODE A] เป้าหมาย ${target + 1} : ${f} Hz · A=${a + 1} B=${b + 1}`, 'alert');
+    } else {
+      events = buildAlertSequenceFixedBeep();
+      log(`[MODE B] เป้าหมาย ${target + 1} : ${f} Hz · 1 long beep`, 'alert');
+    }
+    buildVibrateQueue(events);
+  }
+
+  function processAudio() {
+    if (!analyser || !isListening) return;
+    const len = analyser.frequencyBinCount;
+    const data = new Uint8Array(len);
+    analyser.getByteFrequencyData(data);
+
+    let maxIdx = 0, maxVal = 0;
+    for (let i = 0; i < len; i++) if (data[i] > maxVal) { maxVal = data[i]; maxIdx = i; }
+    const nyq = audioContext.sampleRate / 2;
+    const freq = (maxIdx / len) * nyq;
+    freqValueEl.textContent = freq.toFixed(1);
+
+    if (freq >= 0 && freq <= 10000) {
+      const t = findTarget(freq);
+      if (t >= 0) {
+        if (currentMode === 'A') {
+          triggerPendingAlert(t);
+        } else {
+          const now = performance.now();
+          if (!alertActive && !alertPending && (now - lastModeBCountTime) >= COOLDOWN_TIME) {
+            lastModeBCountTime = now;
+            modeB_detectionCount++;
+            log(`[MODE B] ${modeB_detectionCount}/${modeB_skipThreshold}`, 'detect');
+            if (modeB_detectionCount >= modeB_skipThreshold) {
+              resetModeBSkipThreshold();
+              triggerPendingAlert(t);
+            }
+          }
+        }
+      }
+    }
+    requestAnimationFrame(processAudio);
+  }
+
+  async function startListening() {
+    if (isListening) return;
+
+    const me = await api('/api/me');
+    if (!me.ok || (me.user.role !== 'admin' && me.user.status !== 'paid')) {
+      alert('⚠️ คุณไม่มีสิทธิ์ใช้งาน — กรุณาชำระเงินก่อน');
+      if (me.user && me.user.status === 'expired') {
+        goToPayment();
+        els.expiredOverlay.classList.add('show');
+      }
+      return;
+    }
+    currentUser = me.user;
+
+    try {
+      audioContext = new (window.AudioContext || window.webkitAudioContext)();
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+      microphone = audioContext.createMediaStreamSource(stream);
+      analyser = audioContext.createAnalyser();
+      analyser.fftSize = FFT_SIZE;
+      analyser.smoothingTimeConstant = 0.8;
+      microphone.connect(analyser);
+
+      isListening = true;
+      startBtn.disabled = true;
+      stopBtn.disabled = false;
+      log('🎤 เปิดไมค์แล้ว · กำลังฟัง...', 'highlight');
+      freqTargetEl.textContent = 'กำลังฟัง...';
+      processAudio();
+    } catch (err) {
+      log('❌ ไม่สามารถเข้าถึงไมโครโฟน: ' + err.message, 'alert');
+      alert('❌ ไม่สามารถเข้าถึงไมโครโฟน: ' + err.message);
+    }
+  }
+
+  function stopListening() {
+    if (!isListening) return;
+    if (microphone) { microphone.disconnect(); microphone = null; }
+    if (audioContext) { audioContext.close(); audioContext = null; }
+    analyser = null;
+    isListening = false;
+    startBtn.disabled = false;
+    stopBtn.disabled = true;
+    freqValueEl.textContent = '0.0';
+    freqTargetEl.textContent = '—';
+    log('⏹ หยุดฟังแล้ว', 'info');
+    clearVibrateQueue();
+  }
+
+  window.__stopListening = stopListening;
+
+  resetModeBSkipThreshold();
+  modeLabelEl.textContent = 'MODE A';
+  modeLabelEl.classList.remove('mode-b');
+  updateVibrateIndicator(false);
+  log('🟢 พร้อมใช้งาน · กด "เริ่มฟัง" เพื่อเปิดไมค์', 'highlight');
+
+  startBtn.addEventListener('click', startListening);
+  stopBtn.addEventListener('click', stopListening);
+  toggleModeBtn.addEventListener('click', toggleMode);
+
+  setInterval(updatePendingAlert, 20);
+
+  window.addEventListener('beforeunload', () => {
+    if (navigator.vibrate) navigator.vibrate(0);
+    clearVibrateQueue();
+  });
+})();
+
+function stopListening() {
+  if (window.__stopListening) window.__stopListening();
+}
+
+/* ============================================================
+   EVENT BINDINGS
+============================================================ */
+els.loginBtn.addEventListener('click', handleLogin);
+els.registerBtn.addEventListener('click', handleRegister);
+
+els.loginUser.addEventListener('keydown', e => {
+  if (e.key === 'Enter') { e.preventDefault(); els.loginPass.focus(); }
+});
+els.loginPass.addEventListener('keydown', e => {
+  if (e.key === 'Enter') { e.preventDefault(); handleLogin(); }
+});
+els.regUser.addEventListener('keydown', e => {
+  if (e.key === 'Enter') { e.preventDefault(); els.regPass.focus(); }
+});
+els.regPass.addEventListener('keydown', e => {
+  if (e.key === 'Enter') { e.preventDefault(); els.regPass2.focus(); }
+});
+els.regPass2.addEventListener('keydown', e => {
+  if (e.key === 'Enter') { e.preventDefault(); handleRegister(); }
+});
+
+els.progLogoutBtn.addEventListener('click', handleLogout);
+
+/* ============================================================
+   BOOT
+============================================================ */
+async function boot() {
+  const health = await api('/api/health');
+  if (health.ok) {
+    els.connStatus.textContent = '✅ เชื่อมต่อเซิร์ฟเวอร์สำเร็จ';
+    els.connStatus.className = 'conn-status ok';
+  } else {
+    els.connStatus.textContent = '❌ เชื่อมต่อ backend ไม่ได้';
+    els.connStatus.className = 'conn-status err';
+  }
+
+  const me = await api('/api/me');
+  if (me.ok) {
+    currentUser = me.user;
+    routeByUserStatus();
+    startSessionWatch();
+    return;
+  }
+  showView('login');
+}
+boot();
+</script>
+</body>
+</html>
